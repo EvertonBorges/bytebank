@@ -5,12 +5,17 @@ import 'package:sqflite/sqflite.dart';
 Future<Database> createDatabase() {
   return getDatabasesPath().then((dbPath) {
     final String path = join(dbPath, 'bytebank.db');
-    return openDatabase(path, onCreate: (db, version) {
-      db.execute('CREATE TABLE contacts('
-          'id INTEGER PRIMARY KEY, '
-          'name TEXT, '
-          'accountNumber INTEGER)');
-    }, version: 1);
+    return openDatabase(
+      path,
+      onCreate: (db, version) {
+        db.execute('CREATE TABLE contacts('
+            'id INTEGER PRIMARY KEY, '
+            'name TEXT, '
+            'accountNumber INTEGER)');
+      },
+      version: 1,
+//      onDowngrade: onDatabaseDowngradeDelete,
+    );
   });
 }
 
@@ -29,10 +34,8 @@ Future<List<Contact>> findAll() {
     return db.query('contacts').then((maps) {
       final List<Contact> contacts = List();
       for (Map<String, dynamic> map in maps) {
-        final Contact contact = Contact(
-            map['id'],
-            map['name'],
-            map['accountNumber']);
+        final Contact contact =
+            Contact(map['id'], map['name'], map['accountNumber']);
         contacts.add(contact);
       }
       return contacts;
