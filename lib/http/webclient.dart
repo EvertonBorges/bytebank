@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 
 import 'package:bytebank/models/Contact.dart';
@@ -27,17 +26,41 @@ class LogginInterceptor implements InterceptorContract {
 
 }
 
-Future<List<Transaction>> findAll() async {
-  final client = HttpClientWithInterceptor.build(interceptors: [LogginInterceptor()]);
+final client = HttpClientWithInterceptor.build(
+    interceptors: [LogginInterceptor()]);
 
-  final Response response =  await client.get('http://191.168.21.149:8080/transactions').timeout(Duration(seconds: 5));
+const String baseUrl = 'http://191.168.21.149:8080/transactions';
+
+Future<List<Transaction>> findAll() async {
+  final Response response = await client.get(baseUrl).timeout(
+      Duration(seconds: 5));
   final List<dynamic> decodedJson = jsonDecode(response.body);
   final List<Transaction> transactions = List();
   for (Map<String, dynamic> element in decodedJson) {
-    final Contact contact = Contact(0, element['contact']['name'], element['contact']['accountNumber']);
+    final Contact contact = Contact(
+        0, element['contact']['name'], element['contact']['accountNumber']);
     final Transaction transaction = Transaction(element['value'], contact);
     transactions.add(transaction);
   }
   print('decoded json $decodedJson');
   return transactions;
+}
+
+Future<Transaction> save(Transaction transaction) async {
+  final Map<String, dynamic> transactionMap = {
+    'value': transaction.value,
+    'contact': {
+      'name': transaction.contact.name,
+      'accountNumber': transaction.contact.accountNumber
+    }
+  };
+  final String transactionJson = jsonEncode(transactionMap);
+
+  final Response response = await client.post(baseUrl, headers: {
+    'Content-type': 'application/json',
+    'password': '1000'}, body: transactionJson).timeout(Duration(seconds: 5));
+
+  final Map<String, dynamic> json = jsonDecode(response.body);
+  final Contact contact = Contact(0, json['contact']['name'], json['contact']['accountNumber']);
+  return Transaction(json['value'], contact);
 }
