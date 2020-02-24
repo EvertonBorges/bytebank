@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bytebank/components/response_dialog.dart';
 import 'package:bytebank/components/transaction_auth_dialog.dart';
 import 'package:bytebank/http/webclients/transaction_webclient.dart';
@@ -63,9 +65,9 @@ class _TransactionFormState extends State<TransactionForm> {
                     child: Text('Transfer'),
                     onPressed: () {
                       final double value =
-                      double.tryParse(_valueController.text);
+                          double.tryParse(_valueController.text);
                       final transactionCreated =
-                      Transaction(value, widget.contact);
+                          Transaction(value, widget.contact);
 
                       showDialog(
                           context: context,
@@ -87,9 +89,11 @@ class _TransactionFormState extends State<TransactionForm> {
     );
   }
 
-  void _save(Transaction transactionCreated,
-      String password,
-      BuildContext context,) async {
+  void _save(
+    Transaction transactionCreated,
+    String password,
+    BuildContext context,
+  ) async {
     final Transaction transaction = await _transactionWebClient
         .save(transactionCreated, password)
         .catchError((e) {
@@ -98,7 +102,13 @@ class _TransactionFormState extends State<TransactionForm> {
           builder: (contextDialog) {
             return FailureDialog(e.message);
           });
-    }, test: (e) => e is Exception);
+    }, test: (e) => e is HttpException).catchError((e) {
+      showDialog(
+          context: context,
+          builder: (contextDialog) {
+            return FailureDialog('timeout submitting the transaction');
+          });
+    }, test: (e) => e is TimeoutException);
 
     if (transaction != null) {
       await showDialog(
