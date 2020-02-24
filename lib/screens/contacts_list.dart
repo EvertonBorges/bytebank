@@ -1,4 +1,4 @@
-import 'package:bytebank/components/Progress.dart';
+import 'package:bytebank/components/progress.dart';
 import 'package:bytebank/dao/contact_dao.dart';
 import 'package:bytebank/models/Contact.dart';
 import 'package:bytebank/screens/contact_form.dart';
