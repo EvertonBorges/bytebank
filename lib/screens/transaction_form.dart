@@ -63,9 +63,9 @@ class _TransactionFormState extends State<TransactionForm> {
                     child: Text('Transfer'),
                     onPressed: () {
                       final double value =
-                          double.tryParse(_valueController.text);
+                      double.tryParse(_valueController.text);
                       final transactionCreated =
-                          Transaction(value, widget.contact);
+                      Transaction(value, widget.contact);
 
                       showDialog(
                           context: context,
@@ -87,21 +87,26 @@ class _TransactionFormState extends State<TransactionForm> {
     );
   }
 
-  void _save(
-    Transaction transactionCreated,
-    String password,
-    BuildContext context,
-  ) async {
-    _transactionWebClient.save(transactionCreated, password).then((transaction) {
-      if (transaction != null) {
-        showDialog(context: context, builder: (contextDialog) {
-          return SuccessDialog('successful transaction');
-        }).then((value) => Navigator.pop(context));
-      }
-    }).catchError((e){
-      showDialog(context: context, builder: (contextDialog) {
-        return FailureDialog(e.message);
-      });
+  void _save(Transaction transactionCreated,
+      String password,
+      BuildContext context,) async {
+    final Transaction transaction = await _transactionWebClient
+        .save(transactionCreated, password)
+        .catchError((e) {
+      showDialog(
+          context: context,
+          builder: (contextDialog) {
+            return FailureDialog(e.message);
+          });
     }, test: (e) => e is Exception);
+
+    if (transaction != null) {
+      await showDialog(
+          context: context,
+          builder: (contextDialog) {
+            return SuccessDialog('successful transaction');
+          });
+      Navigator.pop(context);
+    }
   }
 }
