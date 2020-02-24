@@ -23,6 +23,8 @@ class _TransactionFormState extends State<TransactionForm> {
   final TransactionWebClient _webClient = TransactionWebClient();
   final String transactionId = Uuid().v4();
 
+  bool _sending = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -38,9 +40,11 @@ class _TransactionFormState extends State<TransactionForm> {
               Visibility(
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: Progress(message: 'Sending...',),
+                  child: Progress(
+                    message: 'Sending...',
+                  ),
                 ),
-                visible: false,
+                visible: _sending,
               ),
               Text(
                 widget.contact.name,
@@ -104,12 +108,18 @@ class _TransactionFormState extends State<TransactionForm> {
     String password,
     BuildContext context,
   ) async {
-    Transaction transaction = await _send(transactionCreated, password, context);
+    setState(() {
+      _sending = true;
+    });
+
+    Transaction transaction =
+        await _send(transactionCreated, password, context);
 
     await _showSuccessfulMessage(transaction, context);
   }
 
-  Future _showSuccessfulMessage(Transaction transaction, BuildContext context) async {
+  Future _showSuccessfulMessage(
+      Transaction transaction, BuildContext context) async {
     if (transaction != null) {
       await showDialog(
           context: context,
@@ -120,19 +130,27 @@ class _TransactionFormState extends State<TransactionForm> {
     }
   }
 
-  Future<Transaction> _send(Transaction transactionCreated, String password, BuildContext context) async {
+  Future<Transaction> _send(Transaction transactionCreated, String password,
+      BuildContext context) async {
     final Transaction transaction =
         await _webClient.save(transactionCreated, password).catchError((e) {
       _showFailureMessage(context, message: e.message);
     }, test: (e) => e is HttpException).catchError((e) {
-      _showFailureMessage(context, message: 'timeout submitting the transaction');
+      _showFailureMessage(context,
+          message: 'timeout submitting the transaction');
     }, test: (e) => e is TimeoutException).catchError((e) {
       _showFailureMessage(context);
-    }, test: (e) => e is Exception);
+    }, test: (e) => e is Exception).whenComplete(() {
+      setState(() {
+        _sending = false;
+      });
+    });
+
     return transaction;
   }
 
-  void _showFailureMessage(BuildContext context, {String message = 'Unknown error'}) {
+  void _showFailureMessage(BuildContext context,
+      {String message = 'Unknown error'}) {
     showDialog(
         context: context,
         builder: (contextDialog) {
